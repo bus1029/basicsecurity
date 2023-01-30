@@ -8,13 +8,17 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.SecurityFilterChain
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnDefaultWebSecurity
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableWebSecurity
-class SecurityConfig {
+class SecurityConfig (
+  private val userDetailsService: UserDetailsService
+) {
+
   @Bean
   @Order(SecurityProperties.BASIC_AUTH_ORDER)
   fun filterChain(http: HttpSecurity): SecurityFilterChain {
@@ -22,6 +26,7 @@ class SecurityConfig {
       .anyRequest().authenticated()
     setLogin(http)
     setLogout(http)
+    setRememberMe(http)
 
     return http.build()
   }
@@ -57,5 +62,12 @@ class SecurityConfig {
         response.sendRedirect("/login")
       }
       .deleteCookies("remember-me")
+  }
+
+  private fun setRememberMe(http: HttpSecurity) {
+    http.rememberMe()
+      .rememberMeParameter("remember")
+      .tokenValiditySeconds(3600)
+      .userDetailsService(userDetailsService)
   }
 }
