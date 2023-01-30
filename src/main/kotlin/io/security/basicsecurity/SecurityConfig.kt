@@ -8,11 +8,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.core.Authentication
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnDefaultWebSecurity
@@ -22,11 +18,16 @@ class SecurityConfig {
   @Bean
   @Order(SecurityProperties.BASIC_AUTH_ORDER)
   fun filterChain(http: HttpSecurity): SecurityFilterChain {
-    return http
-      .authorizeRequests()
+    http.authorizeRequests()
       .anyRequest().authenticated()
-      .and()
-      .formLogin()
+    setLogin(http)
+    setLogout(http)
+
+    return http.build()
+  }
+
+  private fun setLogin(http: HttpSecurity) {
+    http.formLogin()
 //      .loginPage("/loginPage")
       .defaultSuccessUrl("/")
       .failureUrl("/login")
@@ -42,7 +43,19 @@ class SecurityConfig {
         response.sendRedirect("/login")
       }
       .permitAll()
-      .and()
-      .build()
+  }
+
+  private fun setLogout(http: HttpSecurity) {
+    http.logout()
+      .logoutUrl("/logout")
+      .logoutSuccessUrl("/login")
+      .addLogoutHandler { request, _, _ ->
+        val session = request.session
+        session.invalidate()
+      }
+      .logoutSuccessHandler { _, response, _ ->
+        response.sendRedirect("/login")
+      }
+      .deleteCookies("remember-me")
   }
 }
