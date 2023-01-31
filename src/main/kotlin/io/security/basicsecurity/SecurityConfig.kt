@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.SecurityFilterChain
 
@@ -27,6 +28,7 @@ class SecurityConfig (
     setLogin(http)
     setLogout(http)
     setRememberMe(http)
+    setSessionManagement(http)
 
     return http.build()
   }
@@ -69,5 +71,13 @@ class SecurityConfig (
       .rememberMeParameter("remember")
       .tokenValiditySeconds(3600)
       .userDetailsService(userDetailsService)
+  }
+
+  private fun setSessionManagement(http: HttpSecurity) {
+    http.sessionManagement()
+//      .invalidSessionUrl("/invalid")
+      .maximumSessions(1)
+      .maxSessionsPreventsLogin(true)
+//      .expiredUrl("/expired")
   }
 }
