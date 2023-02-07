@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.SecurityFilterChain
 
@@ -23,14 +22,21 @@ class SecurityConfig (
   @Bean
   @Order(SecurityProperties.BASIC_AUTH_ORDER)
   fun filterChain(http: HttpSecurity): SecurityFilterChain {
-    http.authorizeRequests()
-      .anyRequest().authenticated()
+    setAuthorization(http)
     setLogin(http)
     setLogout(http)
     setRememberMe(http)
     setSessionManagement(http)
 
     return http.build()
+  }
+
+  private fun setAuthorization(http: HttpSecurity) {
+    http.authorizeRequests()
+            .antMatchers("/user").hasRole("USER")
+            .antMatchers("/admin/pay").hasRole("ADMIN")
+            .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
+            .anyRequest().authenticated()
   }
 
   private fun setLogin(http: HttpSecurity) {
