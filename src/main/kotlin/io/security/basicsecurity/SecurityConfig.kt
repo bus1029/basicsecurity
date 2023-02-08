@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnDefaultWebSecurity
@@ -27,16 +28,18 @@ class SecurityConfig (
     setLogout(http)
     setRememberMe(http)
     setSessionManagement(http)
+    setExceptionHandling(http)
 
     return http.build()
   }
 
   private fun setAuthorization(http: HttpSecurity) {
     http.authorizeRequests()
-            .antMatchers("/user").hasRole("USER")
-            .antMatchers("/admin/pay").hasRole("ADMIN")
-            .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
-            .anyRequest().authenticated()
+      .antMatchers("/login").permitAll()
+      .antMatchers("/user").hasRole("USER")
+      .antMatchers("/admin/pay").hasRole("ADMIN")
+      .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
+      .anyRequest().authenticated()
   }
 
   private fun setLogin(http: HttpSecurity) {
@@ -47,9 +50,11 @@ class SecurityConfig (
       .usernameParameter("userId")
       .passwordParameter("passwd")
       .loginProcessingUrl("/login_proc")
-      .successHandler { _, response, authentication ->
+      .successHandler { request, response, authentication ->
         println("authentication ${authentication.name}")
-        response.sendRedirect("/")
+        val requestCache = HttpSessionRequestCache()
+        val savedRequest = requestCache.getRequest(request, response)
+        response.sendRedirect(savedRequest.redirectUrl)
       }
       .failureHandler { _, response, exception ->
         println("exception ${exception.message}")
@@ -85,5 +90,15 @@ class SecurityConfig (
       .maximumSessions(1)
       .maxSessionsPreventsLogin(true)
 //      .expiredUrl("/expired")
+  }
+
+  private fun setExceptionHandling(http: HttpSecurity) {
+    http.exceptionHandling()
+//      .authenticationEntryPoint { _, response, _ ->
+//        response.sendRedirect("/login")
+//      }
+      .accessDeniedHandler { _, response, _ ->
+        response.sendRedirect("/denied")
+      }
   }
 }
