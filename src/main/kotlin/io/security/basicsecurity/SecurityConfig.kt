@@ -2,7 +2,6 @@ package io.security.basicsecurity
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.autoconfigure.security.ConditionalOnDefaultWebSecurity
-import org.springframework.boot.autoconfigure.security.SecurityProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -21,7 +20,7 @@ class SecurityConfig (
 ) {
 
   @Bean
-  @Order(SecurityProperties.BASIC_AUTH_ORDER)
+  @Order(2)
   fun filterChain(http: HttpSecurity): SecurityFilterChain {
     setAuthorization(http)
     setLogin(http)
@@ -100,5 +99,30 @@ class SecurityConfig (
       .accessDeniedHandler { _, response, _ ->
         response.sendRedirect("/denied")
       }
+  }
+
+  @Bean
+  @Order(1)
+  fun httpBasicFilterChain(http: HttpSecurity): SecurityFilterChain {
+    setAuthorizeOnlyTest(http)
+    httpBasic(http)
+    defaultSessionManagement(http)
+
+    return http.build()
+  }
+
+  private fun setAuthorizeOnlyTest(http: HttpSecurity) {
+    http.antMatcher("/test")
+      .authorizeRequests()
+      .anyRequest().authenticated()
+  }
+
+  private fun httpBasic(http: HttpSecurity) {
+    http.httpBasic()
+  }
+
+  private fun defaultSessionManagement(http: HttpSecurity) {
+    http.sessionManagement()
+      .maximumSessions(1)
   }
 }
